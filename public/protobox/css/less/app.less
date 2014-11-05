@@ -1,0 +1,126 @@
+@import "/bower_components/bootstrap/less/bootstrap.less";
+@import "lato.less";
+@import "tenderness.less";
+@import "variables.less";
+@import "animations.less";
+@icon-font-path: '/bower_components/bootstrap/fonts/';
+
+body{
+    font-family: 'tendernessregular', sans-serif;
+    letter-spacing: -0.02em;
+    font-weight: 400;
+    font-style: normal;
+    color: #333332;
+    font-size: 18px;
+    line-height: 1.4;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+}
+html, body{
+    height: 100%;
+    width: 100%;
+    min-width: 1390px;
+    min-height: 951px;
+}
+.container {
+    min-width: 1300px !important;
+}
+.proto-explain{
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 263px;
+    background: @proto-blue;
+    color: #999999;
+    padding: 26px;
+    z-index: 1;
+}
+.protobox-container{
+    position: relative;
+    z-index: 2;
+    background: @proto-background;
+    width: 100%;
+    height: 100%;
+}
+.proto-header {
+    padding: 17px;
+    position: relative;
+    float: left;
+}
+
+.proto-body{
+    padding: 90px;
+    height: 127%;
+}
+
+.proto-title{
+    margin-top: 21px;
+}
+
+.proto-heading{
+    font-size: 160px;
+    font-weight: 100;
+    color: #fff;
+
+    -webkit-animation: fadein 2s; /* Safari, Chrome and Opera > 12.1 */
+    -moz-animation: fadein 2s; /* Firefox < 16 */
+    -ms-animation: fadein 2s; /* Internet Explorer */
+    -o-animation: fadein 2s; /* Opera < 12.1 */
+    animation: fadein 2s;
+}
+
+.proto-you-give, .proto-you-get {
+    color: @proto-text-blue;
+    font-size: 60px;
+    font-weight: bold;
+}
+.proto-list{
+    color: @proto-text-light-blue;
+    li{
+        margin-bottom: 3px;
+        font-size: 30px;
+    }
+}
+
+.proto-contact{
+    position: relative;
+    width: 15.2%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.contact {
+    position: relative;
+    margin-left: auto;
+    margin-right: auto;
+    width: 85px;
+    border: 2px solid @proto-text-green;
+    padding: 15px;
+    font-size: 23px;
+    font-weight: bold;
+    color: @proto-text-green;
+
+    -webkit-animation: fadein 2s; /* Safari, Chrome and Opera > 12.1 */
+    -moz-animation: fadein 2s; /* Firefox < 16 */
+    -ms-animation: fadein 2s; /* Internet Explorer */
+    -o-animation: fadein 2s; /* Opera < 12.1 */
+    animation: fadein 2s;
+}
+
+.proto-container{
+    width: 74%;
+    min-width: 1390px;
+    margin-left: auto;
+    margin-right: auto
+}
+
+.contact:hover{
+    text-decoration: none;
+    cursor: pointer;
+    color: @proto-text-green;
+}
+
+.proto-logo svg{
+    margin-left: 24px;
+}

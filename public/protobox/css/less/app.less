@@ -1,5 +1,4 @@
 @import "/bower_components/bootstrap/less/bootstrap.less";
-@import "lato.less";
 @import "tenderness.less";
 @import "variables.less";
 @import "animations.less";
@@ -17,31 +16,22 @@ body{
     -webkit-font-smoothing: antialiased;
 }
 html, body{
-    height: 100%;
-    width: 100%;
-    min-width: 1390px;
-    min-height: 951px;
-}
-.container {
-    min-width: 1300px !important;
+    background: @proto-background-2;
+    min-width: 1220px;
 }
 .proto-explain{
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 263px;
+    position: relative;
     background: @proto-blue;
-    color: #999999;
     padding: 26px;
-    z-index: 1;
+    border-radius: 10px;
+    border: 2px solid @proto-blue-border;
 }
 .protobox-container{
+    padding-top: 60px;
+    padding-bottom: 60px;
     position: relative;
-    z-index: 2;
-    background: @proto-background;
     width: 100%;
-    height: 100%;
+    float: left;
 }
 .proto-header {
     padding: 17px;
@@ -50,8 +40,8 @@ html, body{
 }
 
 .proto-body{
-    padding: 90px;
-    height: 127%;
+    padding: 60px;
+    padding-bottom: 0px;
 }
 
 .proto-title{
@@ -59,7 +49,7 @@ html, body{
 }
 
 .proto-heading{
-    font-size: 160px;
+    font-size: 120px;
     font-weight: 100;
     color: #fff;
 
@@ -72,20 +62,20 @@ html, body{
 
 .proto-you-give, .proto-you-get {
     color: @proto-text-blue;
-    font-size: 60px;
+    font-size: 40px;
     font-weight: bold;
 }
 .proto-list{
-    color: @proto-text-light-blue;
+    color: @proto-paragraph;
     li{
         margin-bottom: 3px;
-        font-size: 30px;
+        font-size: 20px;
     }
 }
 
 .proto-contact{
     position: relative;
-    width: 15.2%;
+    width: 18.2%;
     margin-left: auto;
     margin-right: auto;
 }
@@ -94,11 +84,9 @@ html, body{
     position: relative;
     margin-left: auto;
     margin-right: auto;
-    width: 85px;
-    border: 2px solid @proto-text-green;
-    padding: 15px;
-    font-size: 23px;
-    font-weight: bold;
+    padding: 0px;
+    font-size: 31px;
+    font-weight: 800;
     color: @proto-text-green;
 
     -webkit-animation: fadein 2s; /* Safari, Chrome and Opera > 12.1 */
@@ -121,6 +109,14 @@ html, body{
     color: @proto-text-green;
 }
 
-.proto-logo svg{
-    margin-left: 24px;
+.proto-paragraph{
+    color: @proto-paragraph;
+    font-size: 20px;
+}
+
+.proto-desc{
+    color: @proto-text-green;
+}
+.proto-desc:hover{
+    color: @proto-text-green;
 }

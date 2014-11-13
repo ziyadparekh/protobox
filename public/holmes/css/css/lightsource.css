@@ -1,0 +1,34 @@
+#lightsource-message,
+#lightsource-change-warning {
+    padding: 0.2em 0.5em 0.2em 0.5em;
+}
+
+#lightsource-message.info {
+    background: rgba(200, 240, 255, 0.9);
+    color: black;
+}
+
+#lightsource-message.error {
+    background: rgba(255, 70, 0, 0.9);
+    color: white;
+}
+
+#lightsource-message.warning,
+#lightsource-change-warning {
+    background: rgba(255, 230, 0, 0.9);
+    color: black;
+}
+
+#lightsource-change-warning button {
+    background: rgba(255, 255, 255, 0.7);
+    border: none;
+    box-shadow: 0 0.1em 0.1em 0em rgb(128, 128, 128);
+}
+
+.hidden {
+    display: none;
+}
+
+.visible {
+    display: block;
+}

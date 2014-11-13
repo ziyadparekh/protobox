@@ -62,6 +62,7 @@ if(process.env.PORT){
 
 
 //routes
+app.get('/protobox', index.protobox);
 app.get('/', index.index);
 
 module.exports = app;

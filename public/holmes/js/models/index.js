@@ -1,13 +1,13 @@
 var js = {
   filename: 'index.js',
   text: '',
-  breakpoints: {},
+  breakpoints: [],
   mode: 'javascript'
 };
 var html = {
   filename: 'index.html',
   text: '',
-  breakpoints: {} ,
+  breakpoints: [] ,
   mode: 'html'
 };
 js.text = ['function randomColor() {',

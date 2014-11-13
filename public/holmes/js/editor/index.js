@@ -26,21 +26,86 @@ function Editor(emitter, files) {
   this.resize();
   this.emitter.on('component-header:file select', this.$onFileSelect.bind(this));
   this.$initFiles(files);
-  // this.editor.on('gutterClick', this.$onGutterClick.bind(this));
-  // this.editor.on('change', debounce(this.$updateFiles.bind(this)), 50);
+  this.editor.on('gutterClick', this.$onGutterClick.bind(this));
+  this.editor.on('change', debounce(this.$updateFiles.bind(this)), 250);
   // this.emitter.on('component-header:file select', this.$onFileSelect.bind(this));
-  // this.emitter.on('component-debugger:paused', this.$highlightLine.bind(this));
-  // this.emitter.on('component-debugger:resumed', this.$removeHighlight.bind(this));
+  this.emitter.on('component-debugger:paused', this.$highlightLine.bind(this));
+  this.emitter.on('component-debugger:resumed', this.$removeHighlight.bind(this));
   // this.find('.run').on('click', this.$onRun.bind(this));
 };
 
 Editor.prototype.$initFiles = function(files) {
-    this.files = files;
-    for (var fileObject in files) {
-        var doc = new CodeMirror.Doc(files[fileObject].text, files[fileObject].mode);
-        //this.editor.swapDoc(doc);
-        files[fileObject].cmDoc = doc;
+  this.files = files;
+  for (var fileObject in files) {
+      var doc = new CodeMirror.Doc(files[fileObject].text, files[fileObject].mode);
+      //this.editor.swapDoc(doc);
+      files[fileObject].cmDoc = doc;
+  }
+};
+
+Editor.prototype.$setGutterMarker = function (lineno) {
+  var info = this.editor.lineInfo(lineno);
+  var marker = info.gutterMarkers ? null : this.$makeMarker();
+  this.editor.setGutterMarker(lineno, 'breakpoints', marker);
+  return !!marker;
+};
+
+Editor.prototype.$onGutterClick = function (_, n) {
+  var set = this.$setGutterMarker(n);
+  this.$setBreakpoint(this.currentFile(), n, set);
+};
+
+Editor.prototype.$setBreakpoint = function(file, lineno, set) {
+  if (set) {
+    file.breakpoints[lineno] = true;
+    this.emitter.emit('component-editor:breakpoint add', lineno + 1);
+  } else {
+    file.breakpoints[lineno] = false;
+    this.emitter.emit('component-editor:breakpoint remove', lineno + 1);
+  }
+};
+
+Editor.prototype.$makeMarker = function() {
+  return $('<div/>')
+    .addClass('marker')
+    .text('●')
+    [0];
+};
+
+Editor.prototype.$removeHighlight = function () {
+  if (this.$hLineno != null) {
+    this.editor.removeLineClass(this.$hLineno, 'background', 'selected');
+  }
+};
+
+Editor.prototype.$highlightLine = function(lineno) {
+  this.$removeHighlight();
+  if (lineno) {
+    this.$hLineno = lineno - 1;
+    this.editor.addLineClass(this.$hLineno, 'background', 'selected');
+  }
+};
+
+/**
+ * Get the active file.
+ * @api
+ */
+Editor.prototype.currentFile = function() {
+  var file;
+  var doc = this.editor.getDoc();
+  $.each(this.files, function (f, obj) {
+    if (obj.cmDoc === doc) {
+      file = obj;
     }
+  });
+  return file;
+};
+
+Editor.prototype.$updateFiles = function() {
+  for(var fileName in this.files) {
+      this.files[fileName].text = this.files[fileName].cmDoc.getValue();
+  }
+  this.emitter.emit('component-editor:run', this.files);
 };
 
 Editor.prototype.$onFileSelect = function (filename) {

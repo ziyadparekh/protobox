@@ -18099,12 +18099,15 @@ return jQuery;
 
 },{}],8:[function(require,module,exports){
 var Editor = require("../editor");
+var header = require('../header');
+var files = require('../models');
 var EventEmitter = require('component-emitter');
 var emitter = new EventEmitter();
 
-new Editor(emitter);
+new Editor(emitter, files);
+header(emitter, files);
 
-},{"../editor":9,"component-emitter":4}],9:[function(require,module,exports){
+},{"../editor":9,"../header":10,"../models":11,"component-emitter":4}],9:[function(require,module,exports){
 var CodeMirror = require('codemirror');
 var $ = require('jquery');
 var debounce = require('debounce');
@@ -18116,7 +18119,7 @@ var closeBrackets = require('codemirror/addon/edit/closebrackets');
  * @param {EventEmitter} emitter
  * @param {array<File>} files
  */
-function Editor(emitter) {
+function Editor(emitter, files) {
   this.emitter = emitter;
   this.container = $('#editor');
   this.editor = new CodeMirror.fromTextArea($('#lightsource-text')[0], {
@@ -18131,14 +18134,34 @@ function Editor(emitter) {
     theme: "lightsource-ambiance"
   });
   this.resize();
-  // this.$initFiles(files);
+  this.emitter.on('component-header:file select', this.$onFileSelect.bind(this));
+  this.$initFiles(files);
   // this.editor.on('gutterClick', this.$onGutterClick.bind(this));
   // this.editor.on('change', debounce(this.$updateFiles.bind(this)), 50);
   // this.emitter.on('component-header:file select', this.$onFileSelect.bind(this));
   // this.emitter.on('component-debugger:paused', this.$highlightLine.bind(this));
   // this.emitter.on('component-debugger:resumed', this.$removeHighlight.bind(this));
   // this.find('.run').on('click', this.$onRun.bind(this));
-}
+};
+
+Editor.prototype.$initFiles = function(files) {
+    this.files = files;
+    for (var fileObject in files) {
+        var doc = new CodeMirror.Doc(files[fileObject].text, files[fileObject].mode);
+        //this.editor.swapDoc(doc);
+        files[fileObject].cmDoc = doc;
+    }
+};
+
+Editor.prototype.$onFileSelect = function (filename) {
+  var file;
+  for(var fileName in this.files) {
+    if (this.files[fileName].filename === filename) {
+        file = this.files[fileName];
+    }
+  }
+  this.editor.swapDoc(file.cmDoc);
+};
 
 Editor.prototype.resize = function() {
     this.editor.setSize(this.container.width(), this.container.height());
@@ -18146,4 +18169,61 @@ Editor.prototype.resize = function() {
 
 
 module.exports = Editor;
-},{"codemirror":2,"codemirror/addon/edit/closebrackets":1,"codemirror/mode/javascript/javascript":3,"debounce":5,"jquery":7}]},{},[8]);
+},{"codemirror":2,"codemirror/addon/edit/closebrackets":1,"codemirror/mode/javascript/javascript":3,"debounce":5,"jquery":7}],10:[function(require,module,exports){
+var $ = require('jquery');
+
+/**
+ * init the header component.
+ * @api
+ * @param {EventEmitter} emitter
+ * @param {UserSession} session
+ */
+module.exports = function (emitter, session) {
+  $('header .save').on('click', function () {
+    
+  });
+
+  var files = $('header .files');
+  files.on('click', 'a', function (e) {
+    files.find('.active').removeClass('active');
+    var el = $(e.target).parent();
+    el.addClass('active');
+    emitter.emit('component-header:file select', el.attr('data-filename'));
+  });
+};
+},{"jquery":7}],11:[function(require,module,exports){
+var js = {
+  filename: 'index.js',
+  text: '',
+  breakpoints: {},
+  mode: 'javascript'
+};
+var html = {
+  filename: 'index.html',
+  text: '',
+  breakpoints: {} ,
+  mode: 'html'
+};
+js.text = ['function randomColor() {',
+   '  var n = Math.floor(Math.random() * 16777215);',
+   '  return "#" + n.toString(16);',
+   '}',
+   '',
+   'function changeColor() {',
+   '  var color = randomColor();',
+   '  var elem = document.querySelector(".hello-world");',
+   '  elem.style.color = color;',
+   '}',
+   '',
+   'setInterval(changeColor, 250);'
+   ].join('\n');
+
+html.text = '<div class="hello-world">Hello World</div>';
+
+var files = {}
+files.js = js;
+files.html = html;
+
+
+module.exports = files;
+},{}]},{},[8]);

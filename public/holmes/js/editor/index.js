@@ -27,7 +27,7 @@ function Editor(emitter, files) {
   this.emitter.on('component-header:file select', this.$onFileSelect.bind(this));
   this.$initFiles(files);
   this.editor.on('gutterClick', this.$onGutterClick.bind(this));
-  this.editor.on('change', debounce(this.$updateFiles.bind(this)), 250);
+  this.editor.on('change', this.$updateFiles.bind(this));
   // this.emitter.on('component-header:file select', this.$onFileSelect.bind(this));
   this.emitter.on('component-debugger:paused', this.$highlightLine.bind(this));
   this.emitter.on('component-debugger:resumed', this.$removeHighlight.bind(this));
@@ -102,10 +102,16 @@ Editor.prototype.currentFile = function() {
 };
 
 Editor.prototype.$updateFiles = function() {
-  for(var fileName in this.files) {
-      this.files[fileName].text = this.files[fileName].cmDoc.getValue();
+  var self = this;
+  if (this.timeout) {
+    clearTimeout(this.timeout);
   }
-  this.emitter.emit('component-editor:run', this.files);
+  this.timeout = setTimeout(function () {
+    for(var fileName in self.files) {
+        self.files[fileName].text = self.files[fileName].cmDoc.getValue();
+    }
+    self.emitter.emit('component-editor:run', self.files);
+  }, 1000);
 };
 
 Editor.prototype.$onFileSelect = function (filename) {

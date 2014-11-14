@@ -56,7 +56,7 @@
         <div id='console' class='app-boxes col-xs-4'>
             <textarea id="lightsource-console"></textarea>
         </div>
-        <div class="panel panel-default">
+        <div class="panel panel-default col-xs-4">
           <div class="panel-heading">
             <div class="btn-group toolbar">
               <a role="button" class="btn btn-sm resume" disabled title="Resume">
@@ -71,6 +71,14 @@
               <a role="button" class="btn btn-sm step-out" disabled title="Step Out">
                 <span class="glyphicon glyphicon-circle-arrow-up"></span>
               </a>
+            </div>
+            <div class="panel panel-default">
+              <div class="panel-heading stack-heading"><h6>Call Stack</h6></div>
+              <table class="call-stack table table-striped"><tr></tr></table>
+            </div>
+            <div class="panel panel-default">
+              <div class="panel-heading scope-heading"><h6>Scope</h6></div>
+              <table class="var-scope table table-striped"><tr></tr></table>
             </div>
           </div>
 <!--         <div id='browser' class='app-boxes col-xs-4'>

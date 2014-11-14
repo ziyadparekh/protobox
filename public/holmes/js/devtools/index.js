@@ -1,5 +1,30 @@
 var $ = require('jquery');
 var util = require('util');
+var Hogan = require('hogan');
+
+var tScope = Hogan.compile('{{#scope}}'+
+  '<tr>'+
+    '<td>{{name}}</td>' +
+    '<td><small>{{value}}</small></td>' +
+  '</tr>'+
+'{{/scope}}');
+var tStack = Hogan.compile('{{#stack}}'+
+  '<tr>'+
+    '<td>{{name}}</td>'+
+    '<td><small>{{filename}}</small></td>'+
+  '</tr>'+
+'{{/stack}}');
+
+function renderStack(stack) {
+  return tStack.render({stack: stack.slice().reverse()});
+}
+function renderScope(frame) {
+  $.each(frame.scope, function (i, o) {
+    o.value = frame.evalInScope(o.name) + '';
+  });
+  return tScope.render(frame);
+}
+
 
 /**
  * @constructor
@@ -59,13 +84,9 @@ DevTools.prototype.$resetDebugger = function() {
  */
 DevTools.prototype.updateDebugger = function () {
   var stack = this.debug.getCallStack();
-  // this.find('.call-stack').html(renderStack(stack));
-  // this.find('.var-scope').html(renderScope(stack[stack.length - 1]));
-  var scope = stack[stack.length - 1];
-  $.each(scope.scope, function (i, o) {
-    o.value = scope.evalInScope(o.name) + '';
-    console.log(o.value);
-  });
+  $('.call-stack').html(renderStack(stack));
+  $('.var-scope').html(renderScope(stack[stack.length - 1]));
+
   var loc = this.debug.getCurrentLoc();
   var lineno = loc.start.line;
   if (this.debug.paused()) {

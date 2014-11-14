@@ -8,14 +8,15 @@ var $ = require('jquery');
  */
 module.exports = function (emitter, session) {
   $('header .save').on('click', function () {
-    
+
   });
 
-  var files = $('header .files');
+  var files = $('.editor-tabs .files');
   files.on('click', 'a', function (e) {
     files.find('.active').removeClass('active');
     var el = $(e.target).parent();
     el.addClass('active');
-    emitter.emit('component-header:file select', el.attr('data-filename'));
+    var action = el.attr('data-filename');
+    emitter.emit('component-header:file select', action);
   });
 };

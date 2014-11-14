@@ -24,6 +24,7 @@ function Editor(emitter, files) {
     theme: "lightsource-ambiance"
   });
   this.resize();
+  $(window).on('resize', this.resize.bind(this));
   this.emitter.on('component-header:file select', this.$onFileSelect.bind(this));
   this.emitter.on('lineNo', this.$onRewind.bind(this));
 
@@ -40,13 +41,13 @@ Editor.prototype.$initFiles = function(files) {
   this.files = files;
   for (var fileObject in files) {
       var doc = new CodeMirror.Doc(files[fileObject].text, files[fileObject].mode);
-      //this.editor.swapDoc(doc);
+      this.editor.swapDoc(doc);
       files[fileObject].cmDoc = doc;
   }
 };
 
 Editor.prototype.$onRewind = function(lineno) {
-    console.log(lineno);
+    this.$jumpToLine(lineno);
     this.$highlightLine(lineno);
 };
 
@@ -113,15 +114,19 @@ Editor.prototype.$updateFiles = function() {
   if (this.timeout) {
     clearTimeout(this.timeout);
   }
+  for(var fileName in self.files) {
+      self.files[fileName].text = self.files[fileName].cmDoc.getValue();
+  }
   this.timeout = setTimeout(function () {
-    for(var fileName in self.files) {
-        self.files[fileName].text = self.files[fileName].cmDoc.getValue();
-    }
     self.emitter.emit('component-editor:run', self.files);
   }, 1000);
 };
 
 Editor.prototype.$onFileSelect = function (filename) {
+  if(filename === 'Run') {
+    this.$updateFiles();
+    return;
+  }
   var file;
   for(var fileName in this.files) {
     if (this.files[fileName].filename === filename) {
@@ -132,8 +137,14 @@ Editor.prototype.$onFileSelect = function (filename) {
 };
 
 Editor.prototype.resize = function() {
-    this.editor.setSize(this.container.width(), this.container.height());
+    this.editor.setSize(this.container.width(), this.container.height() -120);
 };
 
+Editor.prototype.$jumpToLine = function(lineno) {
+  if(lineno && !isNaN(Number(lineno))){
+    this.editor.setCursor(Number(lineno), 0);
+    this.editor.focus();
+  }
+};
 
 module.exports = Editor;

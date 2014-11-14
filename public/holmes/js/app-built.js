@@ -19095,7 +19095,7 @@ DevTools.prototype.$getCode = function () {
  */
 DevTools.prototype.loadAndRun = function () {
   // Hardcode our two files for now.
-  //this.$resetDebugger();
+  this.$resetDebugger();
   this.debug.load(this.$getCode().js, 'index.js');
   this.debug.run();
 };
@@ -19130,6 +19130,7 @@ function Editor(emitter, files) {
     theme: "lightsource-ambiance"
   });
   this.resize();
+  $(window).on('resize', this.resize.bind(this));
   this.emitter.on('component-header:file select', this.$onFileSelect.bind(this));
   this.emitter.on('lineNo', this.$onRewind.bind(this));
 
@@ -19146,13 +19147,13 @@ Editor.prototype.$initFiles = function(files) {
   this.files = files;
   for (var fileObject in files) {
       var doc = new CodeMirror.Doc(files[fileObject].text, files[fileObject].mode);
-      //this.editor.swapDoc(doc);
+      this.editor.swapDoc(doc);
       files[fileObject].cmDoc = doc;
   }
 };
 
 Editor.prototype.$onRewind = function(lineno) {
-    console.log(lineno);
+    this.$jumpToLine(lineno);
     this.$highlightLine(lineno);
 };
 
@@ -19219,15 +19220,19 @@ Editor.prototype.$updateFiles = function() {
   if (this.timeout) {
     clearTimeout(this.timeout);
   }
+  for(var fileName in self.files) {
+      self.files[fileName].text = self.files[fileName].cmDoc.getValue();
+  }
   this.timeout = setTimeout(function () {
-    for(var fileName in self.files) {
-        self.files[fileName].text = self.files[fileName].cmDoc.getValue();
-    }
     self.emitter.emit('component-editor:run', self.files);
   }, 1000);
 };
 
 Editor.prototype.$onFileSelect = function (filename) {
+  if(filename === 'Run') {
+    this.$updateFiles();
+    return;
+  }
   var file;
   for(var fileName in this.files) {
     if (this.files[fileName].filename === filename) {
@@ -19238,9 +19243,15 @@ Editor.prototype.$onFileSelect = function (filename) {
 };
 
 Editor.prototype.resize = function() {
-    this.editor.setSize(this.container.width(), this.container.height());
+    this.editor.setSize(this.container.width(), this.container.height() -120);
 };
 
+Editor.prototype.$jumpToLine = function(lineno) {
+  if(lineno && !isNaN(Number(lineno))){
+    this.editor.setCursor(Number(lineno), 0);
+    this.editor.focus();
+  }
+};
 
 module.exports = Editor;
 
@@ -19255,17 +19266,19 @@ var $ = require('jquery');
  */
 module.exports = function (emitter, session) {
   $('header .save').on('click', function () {
-    
+
   });
 
-  var files = $('header .files');
+  var files = $('.editor-tabs .files');
   files.on('click', 'a', function (e) {
     files.find('.active').removeClass('active');
     var el = $(e.target).parent();
     el.addClass('active');
-    emitter.emit('component-header:file select', el.attr('data-filename'));
+    var action = el.attr('data-filename');
+    emitter.emit('component-header:file select', action);
   });
 };
+
 },{"jquery":10}],15:[function(require,module,exports){
 var js = {
   filename: 'index.js',
@@ -19279,25 +19292,25 @@ var html = {
   breakpoints: [] ,
   mode: 'html'
 };
-js.text = ['function randomColor() {',
-   '  var n = Math.floor(Math.random() * 16777215);',
-   '  return "#" + n.toString(16);',
-   '}',
-   '',
-   'function changeColor() {',
-   '  var color = randomColor();',
-   '  var elem = document.querySelector(".hello-world");',
-   '  elem.style.color = color;',
-   '}',
-   '',
-   'setInterval(changeColor, 250);'
-   ].join('\n');
+// js.text = ['function randomColor() {',
+//    '  var n = Math.floor(Math.random() * 16777215);',
+//    '  return "#" + n.toString(16);',
+//    '}',
+//    '',
+//    'function changeColor() {',
+//    '  var color = randomColor();',
+//    '  var elem = document.querySelector(".hello-world");',
+//    '  elem.style.color = color;',
+//    '}',
+//    '',
+//    'setInterval(changeColor, 250);'
+//    ].join('\n');
 
-html.text = '<div class="hello-world">Hello World</div>';
+// html.text = '<div class="hello-world">Hello World</div>';
 
 var files = {}
-files.js = js;
 files.html = html;
+files.js = js;
 
 
 module.exports = files;
@@ -19310,13 +19323,12 @@ var $ = require('jquery');
 function Scrubber (emiter) {
 	this.scrubberView = new scrubber();
 	emiter.on("component-debugger:finishedRunning", this.$initScrubber.bind(this));
+  //$("#play-pause").on('click', this.playPause.bind(this));
 	this.emiter = emiter;
 
 }
 
 Scrubber.prototype.$initScrubber = function(steps, stepno) {
-	console.log(steps);
-	console.log(stepno);
 	this.steps = steps || [];
 	var self = this;
 	this.scrubberView
@@ -19325,13 +19337,39 @@ Scrubber.prototype.$initScrubber = function(steps, stepno) {
 		.step(1) // 0
 		.value(stepno) // 0
 		.orientation('horizontal'); // 'horizontal'
+  this.scrubberView.elt.style.width = "100%";
 	$('#scrubber').empty().append(this.scrubberView.elt);
 	this.scrubberView.onValueChanged = function (value) {
 		self.emiter.emit("lineNo", self.steps[value].y, value);
 	}
 };
 
+// Scrubber.prototype.playPause = function(e) {
+//   if($(e.currentTarget).hasClass('play')){
+//     $(e.currentTarget).removeClass('play').addClass('pause').text('Pause');
+//   } else {
+//     $(e.currentTarget).removeClass('pause').addClass('play').text('Play');
+//     if(interval){
+//       this.currentPlayStep = this.scrubberView.value();
+//       clearInterval(interval);
+//       return;
+//     }
+//   }
+//   this.currentPlayStep = this.currentPlayStep || 0;
+//   var self = this;
+//   var interval = setInterval(function () {
+//     if (this.currentPlayStep === self.steps.length -1){
+//       clearInterval(interval)
+//     } else {
+//       self.scrubberView.value(this.currentPlayStep);
+//       this.currentPlayStep++
+//     }
+//   }, 700);
+// };
+
+
 module.exports = Scrubber;
+
 },{"./scrubber":17,"jquery":10}],17:[function(require,module,exports){
 function ScrubberView() {
   this.makeAccessors();

@@ -188,7 +188,7 @@ DevTools.prototype.$getCode = function () {
  */
 DevTools.prototype.loadAndRun = function () {
   // Hardcode our two files for now.
-  //this.$resetDebugger();
+  this.$resetDebugger();
   this.debug.load(this.$getCode().js, 'index.js');
   this.debug.run();
 };

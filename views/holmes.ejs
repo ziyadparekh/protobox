@@ -21,68 +21,41 @@
             </button>
               <a class="navbar-brand" href="#">debug.js</a>
             </div>
-            <nav class="navbar-collapse bs-navbar-collapse collapse" role="navigation" style="height: 1px;">
-              <ul class="nav navbar-nav files">
-                <li class="active" data-filename="index.js"><a href="javascript:void(0)">index.js</a></li>
-                <li data-filename="index.html"><a href="javascript:void(0)">index.html</a></li>
-              </ul>
-              <ul class="nav navbar-nav navbar-right">
-                <li>
-                  <a class="project-link" href="http://github.com/amasad/debugjs.com" target="_blank">
-                    <button type="button" class="btn btn-info navbar-btn">
-                      <i class="fa fa-github"></i>
-                    </button>
-                  </a>
-                </li>
-                <li>
-                  <a class="project-link" href="http://twitter.com/amasad" target="_blank">
-                    <button type="button" class="btn btn-info navbar-btn">
-                      <i class="fa fa-twitter"></i>
-                    </button>
-                  </a>
-                </li>
-                <li>
-                  <button type="button" class="btn btn-info navbar-btn save">
-                    <span class="glyphicon glyphicon-floppy-disk"></span>
-                  </button>
-                </li>
-              </ul>
-            </nav>
           </div>
         </header>
-        <div id='scrubber'></div>
-        <div id='editor' class='app-boxes col-xs-4'>
-            <textarea id="lightsource-text"></textarea>
-        </div>
-        <div id='console' class='app-boxes col-xs-4'>
-            <textarea id="lightsource-console"></textarea>
-        </div>
-        <div class="panel panel-default col-xs-4">
-          <div class="panel-heading">
-            <div class="btn-group toolbar">
-              <a role="button" class="btn btn-sm resume" disabled title="Resume">
-                <span class="glyphicon glyphicon-play-circle"></span>
-              </a>
-              <a role="button" class="btn btn-sm step-over" disabled title="Step Over">
-                <span class="glyphicon glyphicon-share-alt"></span>
-              </a>
-              <a role="button" class="btn btn-sm step-in" disabled title="Step In">
-                <span class="glyphicon glyphicon-circle-arrow-down"></span>
-              </a>
-              <a role="button" class="btn btn-sm step-out" disabled title="Step Out">
-                <span class="glyphicon glyphicon-circle-arrow-up"></span>
-              </a>
+        <div class='col-xs-12'>
+          <div class='scrubber-box col-xs-6'>
+            <div class='button-box col-xs-2'>
+              <button id='play-pause' class='play'>Play</button>
             </div>
-            <div class="panel panel-default">
-              <div class="panel-heading stack-heading"><h6>Call Stack</h6></div>
-              <table class="call-stack table table-striped"><tr></tr></table>
-            </div>
-            <div class="panel panel-default">
-              <div class="panel-heading scope-heading"><h6>Scope</h6></div>
-              <table class="var-scope table table-striped"><tr></tr></table>
-            </div>
+            <div id='scrubber' class='col-xs-10'></div>
           </div>
-        <div id='browser' class='app-boxes col-xs-4'></div>
+        </div>
+        <div class='col-xs-12' style='height:100%;'>
+          <div id='editor' class='app-boxes col-xs-6'>
+            <div class='editor-tabs col-xs-12'>
+                <ul class="nav navbar-nav files">
+                  <li data-filename="Run"><a href="javascript:void(0)">Run</a></li>
+                  <li class="active" data-filename="index.js"><a href="javascript:void(0)">index.js</a></li>
+                  <li data-filename="index.html"><a href="javascript:void(0)">index.html</a></li>
+                </ul>
+            </div>
+            <textarea id="lightsource-text"></textarea>
+          </div>
+          <div class="panel panel-default col-xs-6">
+              <div class="panel-heading">
+                <div class="panel panel-default">
+                  <div class="panel-heading stack-heading"><h6>Call Stack</h6></div>
+                  <table class="call-stack table table-striped"><tr></tr></table>
+                </div>
+                <div class="panel panel-default">
+                  <div class="panel-heading scope-heading"><h6>Scope</h6></div>
+                  <table class="var-scope table table-striped"><tr></tr></table>
+                </div>
+              </div>
+              <div id='browser' class='app-boxes col-xs-12'></div>
+          </div>
+        </div>
         <script src="/holmes/js/app-built.js"></script>
     </body>
 </html>

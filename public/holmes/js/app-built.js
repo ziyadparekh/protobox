@@ -18893,16 +18893,18 @@ var Editor = require("../editor");
 var DevTools = require('../devtools');
 var header = require('../header');
 var files = require('../models');
+var scrubber = require('../scrubber');
 var EventEmitter = require('component-emitter');
 var emitter = new EventEmitter();
 
 new Editor(emitter, files);
 new DevTools(emitter, files);
+new scrubber(emitter);
 header(emitter, files);
 
 
 
-},{"../devtools":12,"../editor":13,"../header":14,"../models":15,"component-emitter":4}],12:[function(require,module,exports){
+},{"../devtools":12,"../editor":13,"../header":14,"../models":15,"../scrubber":16,"component-emitter":4}],12:[function(require,module,exports){
 var $ = require('jquery');
 var util = require('util');
 var Hogan = require('hogan');
@@ -18954,27 +18956,41 @@ function DevTools(emitter, files) {
     this.$removeBreakpoint.bind(this)
   );
   emitter.on('component-editor:run', this.loadAndRun.bind(this));
+  emitter.on('lineNo', this.$onRewind.bind(this));
   $('.resume').on('click', this.$onResume.bind(this));
   $('.step-over').on('click', this.$onStepOver.bind(this));
   $('.step-out').on('click', this.$onStepOut.bind(this));
   $('.step-in').on('click', this.$onStepIn.bind(this));
 };
 
+DevTools.prototype.$onRewind = function(lineno, stepno) {
+  if(!lineno || !this.steps || !stepno) {
+    return;
+  }
+  var step = this.steps[stepno];
+  $(".var-scope tbody").empty();
+  $.each(step.scope, function (stepno, step) {
+    $(".var-scope tbody").append("<tr><td>"+step.name+"</td><td>"+step.value+"</td></tr>");
+  });
+};
+
 DevTools.prototype.$resetDebugger = function() {
+  var iframeElement = document.getElementById('browser');
+  iframeElement.innerHTML = '';
   var debug = debugjs.createDebugger({
-    iframeParentElement: document.getElementById("lightsource-browser")
+    iframeParentElement: iframeElement
   });
   var context = debug.getContext();
   // TODO: push that down to context-eval.
   context.iframe.style.display = 'block';
   //debug.machine.on('error', this.$logError.bind(this));
   var doc = context.iframe.contentDocument;
-  // doc.open();
-  // doc.write(this.$getCode().html);
-  // doc.close();
-  $.each(this.files, function (f) {
-    debug.addBreakpoints(f.filename, [2]);
-  });
+  doc.open();
+  doc.write(this.$getCode().html);
+  doc.close();
+  // $.each(this.files, function (f) {
+  //   debug.addBreakpoints(f.filename, [2]);
+  // });
   debug.on('breakpoint', this.updateDebugger.bind(this, true));
   this.debug = debug;
   // console.log(context);
@@ -18988,9 +19004,30 @@ DevTools.prototype.$resetDebugger = function() {
  * @param {boolean} paused
  */
 DevTools.prototype.updateDebugger = function () {
+  var i = 0;
+  this.steps = [];
   var stack = this.debug.getCallStack();
+  while (!this.debug.halted()) {
+    var stack = this.debug.getCallStack();
+    var frame = stack[stack.length - 1];
+    $.each(frame.scope, function (i, o) {
+      o.value = frame.evalInScope(o.name) + '';
+    });
+    var point = {
+      y: this.debug.getCurrentLoc().start.line,
+      x: i + 1,
+      scope: frame.scope
+    };
+    this.steps.push(point);
+    $('.call-stack').html(renderStack(stack));
+    $('.var-scope').html(renderScope(stack[stack.length - 1]));
+    this.debug.stepIn();
+    i++;
+  }
   $('.call-stack').html(renderStack(stack));
   $('.var-scope').html(renderScope(stack[stack.length - 1]));
+  console.log(this.steps);
+  this.emitter.emit('component-debugger:finishedRunning', this.steps);
 
   var loc = this.debug.getCurrentLoc();
   var lineno = loc.start.line;
@@ -19062,7 +19099,7 @@ DevTools.prototype.loadAndRun = function () {
 
 module.exports = DevTools;
 
-},{"hogan":8,"jquery":10,"util":19}],13:[function(require,module,exports){
+},{"hogan":8,"jquery":10,"util":21}],13:[function(require,module,exports){
 var CodeMirror = require('codemirror');
 var $ = require('jquery');
 var debounce = require('debounce');
@@ -19090,6 +19127,8 @@ function Editor(emitter, files) {
   });
   this.resize();
   this.emitter.on('component-header:file select', this.$onFileSelect.bind(this));
+  this.emitter.on('lineNo', this.$onRewind.bind(this));
+
   this.$initFiles(files);
   this.editor.on('gutterClick', this.$onGutterClick.bind(this));
   this.editor.on('change', this.$updateFiles.bind(this));
@@ -19106,6 +19145,11 @@ Editor.prototype.$initFiles = function(files) {
       //this.editor.swapDoc(doc);
       files[fileObject].cmDoc = doc;
   }
+};
+
+Editor.prototype.$onRewind = function(lineno) {
+    console.log(lineno);
+    this.$highlightLine(lineno);
 };
 
 Editor.prototype.$setGutterMarker = function (lineno) {
@@ -19255,6 +19299,225 @@ files.html = html;
 module.exports = files;
 
 },{}],16:[function(require,module,exports){
+var scrubber = require("./scrubber");
+var $ = require('jquery');
+
+
+function Scrubber (emiter) {
+	this.scrubberView = new scrubber();
+	emiter.on("component-debugger:finishedRunning", this.$initScrubber.bind(this));
+	this.emiter = emiter;
+
+}
+
+Scrubber.prototype.$initScrubber = function(steps) {
+	console.log(steps);
+	this.steps = steps || [];
+	var self = this;
+	this.scrubberView
+		.min(0)// 0
+		.max(this.steps.length-1) // 1
+		.step(1) // 0
+		.value(0) // 0
+		.orientation('horizontal'); // 'horizontal'
+	$('#scrubber').empty().append(this.scrubberView.elt);
+	this.scrubberView.onValueChanged = function (value) {
+		self.emiter.emit("lineNo", self.steps[value].y, value);
+	}
+};
+
+module.exports = Scrubber;
+},{"./scrubber":17,"jquery":10}],17:[function(require,module,exports){
+function ScrubberView() {
+  this.makeAccessors();
+  this.createDOM();
+  this.attachListeners();
+  this.onValueChanged = function () {};
+}
+
+ScrubberView.prototype.makeAccessors = function () {
+  var value = 0;
+  var min = 0;
+  var max = 1;
+  var step = 0;
+  var orientation = 'horizontal';
+
+  this.value = function (_value) {
+    if (_value === undefined) return value;
+    if (value === _value) return this;
+
+    _value = Math.max(min, Math.min(max, _value));
+
+    if (step > 0) {
+      var nsteps = Math.round((_value - min)/step);
+      
+      var invStep = 1/step;
+      if (invStep === Math.round(invStep)) {
+        _value = (min*invStep + nsteps)/invStep;
+      } else {
+        _value = (min/step + nsteps)*step;
+      }
+      
+      value = Math.max(min, Math.min(max, _value));
+    } else {
+      value = _value;
+    }
+
+    this.redraw();
+    this.onValueChanged(value);
+    return this;
+  };
+
+  this.min = function (_min) {
+    if (_min === undefined) return min;
+    if (min === _min) return this;
+    min = _min;
+    this.redraw();
+    return this;
+  };
+
+  this.max = function (_max) {
+    if (_max === undefined) return max;
+    if (max === _max) return this;
+    max = _max;
+    this.redraw();
+    return this;
+  };
+
+  this.step = function (_step) {
+    if (_step === undefined) return step;
+    if (step === _step) return this;
+    step = _step;
+    this.redraw();
+    return this;
+  };
+
+  this.orientation = function(_orientation) {
+    if (_orientation === undefined) return orientation;
+    if (_orientation === orientation) return this;
+    orientation = _orientation;
+    this.redraw();
+    return this;
+  };
+};
+
+ScrubberView.prototype.createDOM = function () {
+  this.elt = document.createElement('div');
+  this.track = document.createElement('div');
+  this.thumb = document.createElement('div');
+
+  this.elt.className = this.orientation() === 'horizontal' ? 'scrubber' : 'scrubber-vert';
+  this.track.className = 'track';
+  this.thumb.className = 'thumb';
+
+  this.elt.appendChild(this.track);
+  this.elt.appendChild(this.thumb);
+};
+
+ScrubberView.prototype.redraw = function () {
+  var frac = (this.value() - this.min())/(this.max() - this.min());
+  if (this.orientation() === 'horizontal') {
+    this.elt.className = 'scrubber';
+    this.thumb.style.top = '50%';
+    this.thumb.style.left = frac*100 + '%';
+  }
+  else {
+    this.elt.className = 'scrubber-vert';
+    this.thumb.style.left = '50%';
+    this.thumb.style.top = 100 - (frac*100) + '%';
+  }
+};
+
+ScrubberView.prototype.attachListeners = function ()  {
+  var self = this;
+  var mousedown = false;
+  var cachedLeft;
+  var cachedWidth;
+  var cachedTop;
+  var cachedHeight;
+
+  var start = function () {
+    mousedown = true;
+    var rect = self.elt.getBoundingClientRect();
+    // NOTE: page[X|Y]Offset and the width and height
+    // properties of getBoundingClientRect are not
+    // supported in IE8 and below.
+    //
+    // Scrubber doesn't attempt to support IE<9.
+    var xOffset = window.pageXOffset;
+    var yOffset = window.pageYOffset;
+
+    cachedLeft = rect.left + xOffset;
+    cachedWidth = rect.width;
+    cachedTop = rect.top + yOffset;
+    cachedHeight = rect.height;
+    self.thumb.className +=  ' dragging';
+  };
+
+  var stop = function () {
+    mousedown = false;
+    cachedLeft = undefined;
+    cachedWidth = undefined;
+    cachedTop = undefined;
+    cachedHeight = undefined;
+    self.thumb.className = 'thumb';
+  };
+
+  var setValueFromPageX = function (pageX) {
+    var frac = Math.min(1, Math.max((pageX - cachedLeft)/cachedWidth, 0));
+    self.value((1-frac)*self.min() + frac*self.max());
+  };
+
+  var setValueFromPageY = function (pageY) {
+    var frac = Math.min(1, Math.max(1 - (pageY - cachedTop)/cachedHeight, 0));
+    self.value((1-frac)*self.min() + frac*self.max());
+  };
+
+  this.elt.addEventListener('mousedown', start);
+  this.elt.addEventListener('touchstart', start);
+
+  document.addEventListener('mousemove', function (evt) {
+    if (!mousedown) return;
+    evt.preventDefault();
+    if (self.orientation() === 'horizontal')
+      setValueFromPageX(evt.pageX);
+    else
+      setValueFromPageY(evt.pageY);
+  });
+
+  document.addEventListener('touchmove', function (evt) {
+    if (!mousedown) return;
+    evt.preventDefault();
+    if (self.orientation() === 'horizontal')
+      setValueFromPageX(evt.changedTouches[0].pageX);
+    else
+      setValueFromPageY(evt.changedTouches[0].pageY);
+  });
+
+  this.elt.addEventListener('mouseup', function (evt) {
+    if (!mousedown) return;
+    evt.preventDefault();
+    if (self.orientation() === 'horizontal')
+      setValueFromPageX(evt.pageX);
+    else
+      setValueFromPageY(evt.pageY);
+  });
+
+  this.elt.addEventListener('touchend', function (evt) {
+    if (!mousedown) return;
+    evt.preventDefault();
+    if (self.orientation() === 'horizontal')
+      setValueFromPageX(evt.changedTouches[0].pageX);
+    else
+      setValueFromPageY(evt.changedTouches[0].pageY);
+  });
+
+  document.addEventListener('mouseup', stop);
+  document.addEventListener('touchend', stop);
+};
+
+module.exports = ScrubberView;
+},{}],18:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -19279,7 +19542,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],17:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -19367,14 +19630,14 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],18:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],19:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -19964,4 +20227,4 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":18,"_process":17,"inherits":16}]},{},[11]);
+},{"./support/isBuffer":20,"_process":19,"inherits":18}]},{},[11]);

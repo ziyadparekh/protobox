@@ -49,27 +49,41 @@ function DevTools(emitter, files) {
     this.$removeBreakpoint.bind(this)
   );
   emitter.on('component-editor:run', this.loadAndRun.bind(this));
+  emitter.on('lineNo', this.$onRewind.bind(this));
   $('.resume').on('click', this.$onResume.bind(this));
   $('.step-over').on('click', this.$onStepOver.bind(this));
   $('.step-out').on('click', this.$onStepOut.bind(this));
   $('.step-in').on('click', this.$onStepIn.bind(this));
 };
 
+DevTools.prototype.$onRewind = function(lineno, stepno) {
+  if(!lineno || !this.steps || !stepno) {
+    return;
+  }
+  var step = this.steps[stepno];
+  $(".var-scope tbody").empty();
+  $.each(step.scope, function (stepno, step) {
+    $(".var-scope tbody").append("<tr><td>"+step.name+"</td><td>"+step.value+"</td></tr>");
+  });
+};
+
 DevTools.prototype.$resetDebugger = function() {
+  var iframeElement = document.getElementById('browser');
+  iframeElement.innerHTML = '';
   var debug = debugjs.createDebugger({
-    iframeParentElement: document.getElementById("lightsource-browser")
+    iframeParentElement: iframeElement
   });
   var context = debug.getContext();
   // TODO: push that down to context-eval.
   context.iframe.style.display = 'block';
   //debug.machine.on('error', this.$logError.bind(this));
   var doc = context.iframe.contentDocument;
-  // doc.open();
-  // doc.write(this.$getCode().html);
-  // doc.close();
-  $.each(this.files, function (f) {
-    debug.addBreakpoints(f.filename, [2]);
-  });
+  doc.open();
+  doc.write(this.$getCode().html);
+  doc.close();
+  // $.each(this.files, function (f) {
+  //   debug.addBreakpoints(f.filename, [2]);
+  // });
   debug.on('breakpoint', this.updateDebugger.bind(this, true));
   this.debug = debug;
   // console.log(context);
@@ -83,9 +97,30 @@ DevTools.prototype.$resetDebugger = function() {
  * @param {boolean} paused
  */
 DevTools.prototype.updateDebugger = function () {
+  var i = 0;
+  this.steps = [];
   var stack = this.debug.getCallStack();
+  while (!this.debug.halted()) {
+    var stack = this.debug.getCallStack();
+    var frame = stack[stack.length - 1];
+    $.each(frame.scope, function (i, o) {
+      o.value = frame.evalInScope(o.name) + '';
+    });
+    var point = {
+      y: this.debug.getCurrentLoc().start.line,
+      x: i + 1,
+      scope: frame.scope
+    };
+    this.steps.push(point);
+    $('.call-stack').html(renderStack(stack));
+    $('.var-scope').html(renderScope(stack[stack.length - 1]));
+    this.debug.stepIn();
+    i++;
+  }
   $('.call-stack').html(renderStack(stack));
   $('.var-scope').html(renderScope(stack[stack.length - 1]));
+  console.log(this.steps);
+  this.emitter.emit('component-debugger:finishedRunning', this.steps);
 
   var loc = this.debug.getCurrentLoc();
   var lineno = loc.start.line;

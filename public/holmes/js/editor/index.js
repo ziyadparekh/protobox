@@ -25,6 +25,8 @@ function Editor(emitter, files) {
   });
   this.resize();
   this.emitter.on('component-header:file select', this.$onFileSelect.bind(this));
+  this.emitter.on('lineNo', this.$onRewind.bind(this));
+
   this.$initFiles(files);
   this.editor.on('gutterClick', this.$onGutterClick.bind(this));
   this.editor.on('change', this.$updateFiles.bind(this));
@@ -41,6 +43,11 @@ Editor.prototype.$initFiles = function(files) {
       //this.editor.swapDoc(doc);
       files[fileObject].cmDoc = doc;
   }
+};
+
+Editor.prototype.$onRewind = function(lineno) {
+    console.log(lineno);
+    this.$highlightLine(lineno);
 };
 
 Editor.prototype.$setGutterMarker = function (lineno) {

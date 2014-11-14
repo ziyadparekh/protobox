@@ -9,15 +9,16 @@ function Scrubber (emiter) {
 
 }
 
-Scrubber.prototype.$initScrubber = function(steps) {
+Scrubber.prototype.$initScrubber = function(steps, stepno) {
 	console.log(steps);
+	console.log(stepno);
 	this.steps = steps || [];
 	var self = this;
 	this.scrubberView
 		.min(0)// 0
 		.max(this.steps.length-1) // 1
 		.step(1) // 0
-		.value(0) // 0
+		.value(stepno) // 0
 		.orientation('horizontal'); // 'horizontal'
 	$('#scrubber').empty().append(this.scrubberView.elt);
 	this.scrubberView.onValueChanged = function (value) {

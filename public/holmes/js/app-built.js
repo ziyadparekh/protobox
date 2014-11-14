@@ -18940,6 +18940,7 @@ function renderScope(frame) {
  */
 function DevTools(emitter, files) {
   this.container = $('#console');
+  this.currentStepNo = 0;
   // Only do it on init time so the console can work.
   this.files = files;
   this.$resetDebugger();
@@ -18964,7 +18965,8 @@ function DevTools(emitter, files) {
 };
 
 DevTools.prototype.$onRewind = function(lineno, stepno) {
-  if(!lineno || !this.steps || !stepno) {
+  this.currentStepNo = stepno;
+  if(!this.steps || !stepno) {
     return;
   }
   var step = this.steps[stepno];
@@ -19019,15 +19021,13 @@ DevTools.prototype.updateDebugger = function () {
       scope: frame.scope
     };
     this.steps.push(point);
-    $('.call-stack').html(renderStack(stack));
-    $('.var-scope').html(renderScope(stack[stack.length - 1]));
     this.debug.stepIn();
     i++;
   }
-  $('.call-stack').html(renderStack(stack));
-  $('.var-scope').html(renderScope(stack[stack.length - 1]));
+  this.$printStackFrame(this.currentStepNo);
   console.log(this.steps);
-  this.emitter.emit('component-debugger:finishedRunning', this.steps);
+  console.log(this.currentStepNo);
+  this.emitter.emit('component-debugger:finishedRunning', this.steps, this.currentStepNo);
 
   var loc = this.debug.getCurrentLoc();
   var lineno = loc.start.line;
@@ -19040,6 +19040,10 @@ DevTools.prototype.updateDebugger = function () {
     $('.toolbar .btn').attr('disabled', true);
     this.emitter.emit('component-debugger:resumed', lineno);
   }
+};
+
+DevTools.prototype.$printStackFrame = function(stepno) {
+  this.$onRewind(null, stepno);
 };
 
 DevTools.prototype.$addBreakpoint = function (lineno) {
@@ -19310,15 +19314,16 @@ function Scrubber (emiter) {
 
 }
 
-Scrubber.prototype.$initScrubber = function(steps) {
+Scrubber.prototype.$initScrubber = function(steps, stepno) {
 	console.log(steps);
+	console.log(stepno);
 	this.steps = steps || [];
 	var self = this;
 	this.scrubberView
 		.min(0)// 0
 		.max(this.steps.length-1) // 1
 		.step(1) // 0
-		.value(0) // 0
+		.value(stepno) // 0
 		.orientation('horizontal'); // 'horizontal'
 	$('#scrubber').empty().append(this.scrubberView.elt);
 	this.scrubberView.onValueChanged = function (value) {

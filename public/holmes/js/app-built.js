@@ -18957,6 +18957,7 @@ function DevTools(emitter, files) {
     this.$removeBreakpoint.bind(this)
   );
   emitter.on('component-editor:run', this.loadAndRun.bind(this));
+  emitter.on('component-editor:reset-debugger', this.$resetDebugger.bind(this));
   emitter.on('lineNo', this.$onRewind.bind(this));
   $('.resume').on('click', this.$onResume.bind(this));
   $('.step-over').on('click', this.$onStepOver.bind(this));
@@ -18990,9 +18991,11 @@ DevTools.prototype.$resetDebugger = function() {
   doc.open();
   doc.write(this.$getCode().html);
   doc.close();
-  // $.each(this.files, function (f) {
-  //   debug.addBreakpoints(f.filename, [2]);
-  // });
+  $.each(this.files, function (f) {
+    if(f.breakpoints) {
+      debug.addBreakpoints(f.filename, f.breakpoints);
+    }
+  });
   debug.on('breakpoint', this.updateDebugger.bind(this, true));
   this.debug = debug;
   // console.log(context);
@@ -19014,6 +19017,9 @@ DevTools.prototype.updateDebugger = function () {
     var frame = stack[stack.length - 1];
     $.each(frame.scope, function (i, o) {
       o.value = frame.evalInScope(o.name) + '';
+      if(o.value === '[object Object]'){
+        o.value = JSON.stringify(frame.evalInScope(o.name));
+      }
     });
     var point = {
       y: this.debug.getCurrentLoc().start.line,
@@ -19095,11 +19101,10 @@ DevTools.prototype.$getCode = function () {
  */
 DevTools.prototype.loadAndRun = function () {
   // Hardcode our two files for now.
-  this.$resetDebugger();
+  //this.$resetDebugger();
   this.debug.load(this.$getCode().js, 'index.js');
   this.debug.run();
 };
-
 
 module.exports = DevTools;
 
@@ -19132,11 +19137,12 @@ function Editor(emitter, files) {
   this.resize();
   $(window).on('resize', this.resize.bind(this));
   this.emitter.on('component-header:file select', this.$onFileSelect.bind(this));
+  this.emitter.on('component-header:run', this.$updateFiles.bind(this));
   this.emitter.on('lineNo', this.$onRewind.bind(this));
 
   this.$initFiles(files);
   this.editor.on('gutterClick', this.$onGutterClick.bind(this));
-  this.editor.on('change', this.$updateFiles.bind(this));
+  this.editor.on('change', this.$resetDebugger.bind(this));
   // this.emitter.on('component-header:file select', this.$onFileSelect.bind(this));
   this.emitter.on('component-debugger:paused', this.$highlightLine.bind(this));
   this.emitter.on('component-debugger:resumed', this.$removeHighlight.bind(this));
@@ -19217,22 +19223,13 @@ Editor.prototype.currentFile = function() {
 
 Editor.prototype.$updateFiles = function() {
   var self = this;
-  if (this.timeout) {
-    clearTimeout(this.timeout);
-  }
   for(var fileName in self.files) {
       self.files[fileName].text = self.files[fileName].cmDoc.getValue();
   }
-  this.timeout = setTimeout(function () {
-    self.emitter.emit('component-editor:run', self.files);
-  }, 1000);
+  self.emitter.emit('component-editor:run', self.files);
 };
 
 Editor.prototype.$onFileSelect = function (filename) {
-  if(filename === 'Run') {
-    this.$updateFiles();
-    return;
-  }
   var file;
   for(var fileName in this.files) {
     if (this.files[fileName].filename === filename) {
@@ -19253,6 +19250,10 @@ Editor.prototype.$jumpToLine = function(lineno) {
   }
 };
 
+Editor.prototype.$resetDebugger = function() {
+  this.emitter.emit("component-editor-reset-debugger");
+};
+
 module.exports = Editor;
 
 },{"codemirror":2,"codemirror/addon/edit/closebrackets":1,"codemirror/mode/javascript/javascript":3,"debounce":5,"jquery":10}],14:[function(require,module,exports){
@@ -19265,17 +19266,39 @@ var $ = require('jquery');
  * @param {UserSession} session
  */
 module.exports = function (emitter, session) {
-  $('header .save').on('click', function () {
+  var files = $('.editor-tabs .files');
+  var header = $('.proto-run .action-buttons');
+  var stack = $(".scope-tabs .scopes");
 
+  stack.on('click', 'a', function (e) {
+    stack.find('.active').removeClass('active');
+    var el = $(e.target).parent();
+    el.addClass('active');
+    var scope = el.attr('data-stack');
+    switch(scope){
+      case "call-stack":
+        $(".var-scope").addClass('hidden');
+        $('.call-stack').removeClass('hidden');
+        break;
+      case "scope":
+        $(".var-scope").removeClass('hidden');
+        $(".call-stack").addClass('hidden');
+        break;
+    }
   });
 
-  var files = $('.editor-tabs .files');
+  header.on('click', 'a', function (e) {
+    var el = $(e.target).parent();
+    var action = el.attr('data-action');
+    emitter.emit('component-header:run', action)
+  });
+
   files.on('click', 'a', function (e) {
     files.find('.active').removeClass('active');
     var el = $(e.target).parent();
     el.addClass('active');
-    var action = el.attr('data-filename');
-    emitter.emit('component-header:file select', action);
+    var filename = el.attr('data-filename');
+    emitter.emit('component-header:file select', filename);
   });
 };
 
@@ -19337,7 +19360,7 @@ Scrubber.prototype.$initScrubber = function(steps, stepno) {
 		.step(1) // 0
 		.value(stepno) // 0
 		.orientation('horizontal'); // 'horizontal'
-  this.scrubberView.elt.style.width = "100%";
+  this.scrubberView.elt.style.width = "47%";
 	$('#scrubber').empty().append(this.scrubberView.elt);
 	this.scrubberView.onValueChanged = function (value) {
 		self.emiter.emit("lineNo", self.steps[value].y, value);

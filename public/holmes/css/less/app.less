@@ -4,10 +4,13 @@
 @import "../css/lightsource.css";
 @import "../css/scrubber.css";
 @import "variables.less";
+@import "header.less";
+@import "call-stack.less";
 
 html, body{
 	width: 100%;
 	height: 100%;
+  background: darken(@proto-black, 10%);
 }
 
 .app-boxes{
@@ -18,14 +21,14 @@ html, body{
   background: rgba(117, 204, 231, 0.54);
 }
 
-.editor-tabs{
+.tabs{
   background: @proto-editor-grey;
   padding-left: 28px;
 }
-.editor-tabs>ul>li>a:hover{
+.tabs>ul>li>a:hover{
   background: @proto-editor-black;
 }
-.editor-tabs>ul>li.active{
+.tabs>ul>li.active{
   background: @proto-editor-black;
 }
 #play-pause{
@@ -41,9 +44,19 @@ html, body{
 }
 .scrubber{
   margin-top: 0px;
+  height: 27px;
+}
+.scrubber .thumb{
+  background: @proto-blue;
 }
 .scrubber-box{
   margin-bottom: 10px;
   background: @proto-background-2;
   padding-left: 28px;
+}
+
+.app-boxes{
+  padding-left: 3px;
+  padding-right: 3px;
+  padding-top: 3px;
 }

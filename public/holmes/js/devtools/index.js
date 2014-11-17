@@ -50,6 +50,7 @@ function DevTools(emitter, files) {
     this.$removeBreakpoint.bind(this)
   );
   emitter.on('component-editor:run', this.loadAndRun.bind(this));
+  emitter.on('component-editor:reset-debugger', this.$resetDebugger.bind(this));
   emitter.on('lineNo', this.$onRewind.bind(this));
   $('.resume').on('click', this.$onResume.bind(this));
   $('.step-over').on('click', this.$onStepOver.bind(this));
@@ -83,9 +84,11 @@ DevTools.prototype.$resetDebugger = function() {
   doc.open();
   doc.write(this.$getCode().html);
   doc.close();
-  // $.each(this.files, function (f) {
-  //   debug.addBreakpoints(f.filename, [2]);
-  // });
+  $.each(this.files, function (f) {
+    if(f.breakpoints) {
+      debug.addBreakpoints(f.filename, f.breakpoints);
+    }
+  });
   debug.on('breakpoint', this.updateDebugger.bind(this, true));
   this.debug = debug;
   // console.log(context);
@@ -107,6 +110,9 @@ DevTools.prototype.updateDebugger = function () {
     var frame = stack[stack.length - 1];
     $.each(frame.scope, function (i, o) {
       o.value = frame.evalInScope(o.name) + '';
+      if(o.value === '[object Object]'){
+        o.value = JSON.stringify(frame.evalInScope(o.name));
+      }
     });
     var point = {
       y: this.debug.getCurrentLoc().start.line,
@@ -188,10 +194,9 @@ DevTools.prototype.$getCode = function () {
  */
 DevTools.prototype.loadAndRun = function () {
   // Hardcode our two files for now.
-  this.$resetDebugger();
+  //this.$resetDebugger();
   this.debug.load(this.$getCode().js, 'index.js');
   this.debug.run();
 };
-
 
 module.exports = DevTools;

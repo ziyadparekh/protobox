@@ -19,7 +19,7 @@ Scrubber.prototype.$initScrubber = function(steps, stepno) {
 		.step(1) // 0
 		.value(stepno) // 0
 		.orientation('horizontal'); // 'horizontal'
-  this.scrubberView.elt.style.width = "100%";
+  this.scrubberView.elt.style.width = "47%";
 	$('#scrubber').empty().append(this.scrubberView.elt);
 	this.scrubberView.onValueChanged = function (value) {
 		self.emiter.emit("lineNo", self.steps[value].y, value);

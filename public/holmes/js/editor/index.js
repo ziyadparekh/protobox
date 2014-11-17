@@ -26,11 +26,12 @@ function Editor(emitter, files) {
   this.resize();
   $(window).on('resize', this.resize.bind(this));
   this.emitter.on('component-header:file select', this.$onFileSelect.bind(this));
+  this.emitter.on('component-header:run', this.$updateFiles.bind(this));
   this.emitter.on('lineNo', this.$onRewind.bind(this));
 
   this.$initFiles(files);
   this.editor.on('gutterClick', this.$onGutterClick.bind(this));
-  this.editor.on('change', this.$updateFiles.bind(this));
+  this.editor.on('change', this.$resetDebugger.bind(this));
   // this.emitter.on('component-header:file select', this.$onFileSelect.bind(this));
   this.emitter.on('component-debugger:paused', this.$highlightLine.bind(this));
   this.emitter.on('component-debugger:resumed', this.$removeHighlight.bind(this));
@@ -111,22 +112,13 @@ Editor.prototype.currentFile = function() {
 
 Editor.prototype.$updateFiles = function() {
   var self = this;
-  if (this.timeout) {
-    clearTimeout(this.timeout);
-  }
   for(var fileName in self.files) {
       self.files[fileName].text = self.files[fileName].cmDoc.getValue();
   }
-  this.timeout = setTimeout(function () {
-    self.emitter.emit('component-editor:run', self.files);
-  }, 1000);
+  self.emitter.emit('component-editor:run', self.files);
 };
 
 Editor.prototype.$onFileSelect = function (filename) {
-  if(filename === 'Run') {
-    this.$updateFiles();
-    return;
-  }
   var file;
   for(var fileName in this.files) {
     if (this.files[fileName].filename === filename) {
@@ -145,6 +137,10 @@ Editor.prototype.$jumpToLine = function(lineno) {
     this.editor.setCursor(Number(lineno), 0);
     this.editor.focus();
   }
+};
+
+Editor.prototype.$resetDebugger = function() {
+  this.emitter.emit("component-editor-reset-debugger");
 };
 
 module.exports = Editor;
